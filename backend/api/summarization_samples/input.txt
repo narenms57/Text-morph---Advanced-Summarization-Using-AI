@@ -1,0 +1,3 @@
+Deep learning is a subset of machine learning in artificial intelligence (AI) that has networks capable of learning unsupervised from data that is unstructured or unlabeled. 
+    Also known as deep neural learning or deep neural network, it imitates the workings of the human brain in processing data and creating patterns for use in decision making. Deep learning is a key technology behind driverless cars, enabling them to recognize a stop sign, or to distinguish a pedestrian from a lamppost. 
+    It is the foundation of voice control in consumer devices like phones, tablets, TVs, and hands-free speakers.
