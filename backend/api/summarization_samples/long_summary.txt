@@ -1,1 +1,1 @@
-Deep learning is a subset of machine learning in artificial intelligence (AI) that has networks capable of learning unsupervised from data that is unstructured or unlabeled.
+From its early roots in symbolic reasoning and rule-based systems to the rise of machine learning and deep neural networks, AI has transitioned from theoretical curiosity to practical necessity.

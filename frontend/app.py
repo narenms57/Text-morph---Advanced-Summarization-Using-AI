@@ -1,3 +1,16 @@
+import sys
+import os
+
+#project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+#print("Project root path to add:", project_root)
+#sys.path.insert(0, project_root)
+
+#print("Updated sys.path:", sys.path)
+#print("Current working directory:", os.getcwd())
+#print("Backend folder exists at project root:", os.path.isdir(os.path.join(project_root, 'backend')))
+
+#the above three lines help find backend modules when running streamlit app
+
 import streamlit as st
 import httpx
 import textstat
@@ -5,6 +18,15 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import pytesseract
 from io import StringIO
+#from backend.api.summarization import generate_summary, summarize_long_text
+
+#from backend.api.summarization import generate_summary, summarize_long_text
+
+
+
+import os
+print("Current working directory:", os.getcwd())
+
 
 # Your existing imports and API_URL
 from forget_password import reset_password_simple
@@ -57,8 +79,11 @@ def show_login():
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
+        success, user_data = login(email, password)
         if login(email, password):
+            st.session_state.user_id = user_data['id']
             st.success("Logged in successfully")
+
             st.session_state.page = "dashboard"
             st.session_state.logged_in = True
             st.rerun()
@@ -95,7 +120,8 @@ def show_profile():
     st.title("Profile Management")
     profile = get_profile()
     # Add your profile UI updates here
-
+user_id = st.session_state.get("user_id")
+st.write(f"User ID: {user_id}")
 def show_scores(flesch, fog, smog):
     col1, col2, col3 = st.columns(3)
 
@@ -122,7 +148,7 @@ def show_scores(flesch, fog, smog):
 
 def show_dashboard():
     st.title("Dashboard - Readability Checker")
-    st.write("Upload a text file (.txt) or image (.png, .jpg) to analyze readability.")
+    st.write("Upload a text file (.txt) to analyze readability.")
 
     uploaded_file = st.file_uploader("Choose a file", type=['txt','png','jpg','jpeg'])
 
@@ -138,6 +164,21 @@ def show_dashboard():
         # Optionally show extracted text
         # st.subheader("Extracted Text")
         # st.write(text)
+
+        #buttons for summarization and paraphrasing
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Summarize Text"):
+                st.subheader("Summary")
+                #summary = generate_summary(text)
+                summary = "Summary functionality is currently disabled."
+                st.write(summary)
+        with col2:
+            if st.button("Paraphrase Text"):
+                st.subheader("Paraphrased Text")
+                #paraphrased = paraphrase_text(text)
+                paraphrased = "Paraphrasing functionality is currently disabled."
+                st.write(paraphrased)
 
         # Calculate readability scores
         flesch = textstat.flesch_reading_ease(text)

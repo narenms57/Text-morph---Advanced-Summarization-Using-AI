@@ -14,10 +14,12 @@ def login(email: str, password: str):
         response.raise_for_status()
         data = response.json()
         token = data.get("access_token")
-        if token:
+        user = data.get("user") #user info from backend
+        if token and user:
             st.session_state["access_token"] = token
             st.session_state["logged_in"] = True
-            st.session_state["email"] = email
+            st.session_state["email"] = user.get("email")
+            st.session_state["user_id"]= user.get("id")  # Store user ID in session state
             return True
         else:
             return False

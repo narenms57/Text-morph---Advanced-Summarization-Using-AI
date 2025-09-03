@@ -69,7 +69,12 @@ def login(user:UserLogin):
         
         #create jwt token
         access_token = create_access_token(data={"sub": db_user["email"]})
-        return {"access_token": access_token, "token_type": "bearer"}
+        return {"access_token": access_token, "token_type": "bearer",
+                "user":{
+                    "id": db_user["id"],
+                    "username": db_user["username"],
+                    "email": db_user["email"],
+                }}
 
 @router.post("/reset-password")
 async def request_reset_password(request: PasswordResetRequest):
