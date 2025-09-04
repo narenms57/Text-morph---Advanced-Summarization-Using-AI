@@ -27,15 +27,23 @@ def chunk_text_tokenwise(text, max_chunk_tokens=512):
 
 
 def generate_summary(text, max_length=40, min_length=10, length_penalty=1.0, num_beams=3):
-    inputs = tokenizer([text], truncation=True, padding='longest', return_tensors="pt")
+    prompted_text = f"Summarize the following text clearly and concisely without adding any external information: {text}"
+    inputs = tokenizer([prompted_text], truncation=True, padding='longest', return_tensors="pt")
+    bad_words = [
+        "series", "part", "article", "copyright", "postmedia", 
+        "http", "www", ".com", "email", "share", "click",
+        "including", "such as"  # Add these to prevent list generation
+    ]
+    bad_word_ids = [tokenizer.encode(word, add_special_tokens=False) for word in bad_words]
     summary_ids = model.generate(
         inputs.input_ids,
         max_length=max_length,
         min_length=min_length,
         length_penalty=length_penalty,
         num_beams=num_beams,
-        no_repeat_ngram_size=2,
-        early_stopping=True
+        #no_repeat_ngram_size=2,
+        early_stopping=True,
+        bad_words_ids=bad_word_ids,
     )
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
     return summary
@@ -69,6 +77,9 @@ def summarize_long_text(text, chunk_token_limit=512, summary_params=None):
         max_length=summary_params["max_length"],
         min_length=summary_params["min_length"],
         length_penalty=summary_params["length_penalty"],
+        temperature=0.3,
+        no_repeat_ngram_size=4,
+        repetition_penalty=2.5,
         num_beams=summary_params["num_beams"],
     )
     return final_summary
@@ -76,7 +87,7 @@ def summarize_long_text(text, chunk_token_limit=512, summary_params=None):
 
 if __name__ == "__main__":
     # Commented out to avoid error if running without this text
-    # input_text = """Your long test text here..."""
+    #input_text = """"""
     
     # For testing standalone, uncomment input_text assignment above or provide other text to test
 

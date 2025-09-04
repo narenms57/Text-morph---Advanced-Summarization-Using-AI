@@ -1,6 +1,12 @@
 import sys
 import os
 
+# Get the absolute path of the current file's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Get the parent directory (project root)
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+# Add parent directory to Python path
+sys.path.append(parent_dir)
 #project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 #print("Project root path to add:", project_root)
 #sys.path.insert(0, project_root)
@@ -18,9 +24,10 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import pytesseract
 from io import StringIO
-#from backend.api.summarization import generate_summary, summarize_long_text
+from backend.api.summarization import generate_summary, summarize_long_text
+from backend.api.database import save_generated_text
 
-#from backend.api.summarization import generate_summary, summarize_long_text
+ 
 
 
 
