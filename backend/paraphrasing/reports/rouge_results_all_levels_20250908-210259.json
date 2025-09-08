@@ -1,0 +1,102 @@
+{
+  "aggregate": {
+    "conservative": {
+      "rouge1_f_mean": 0.5578865578865578,
+      "rouge2_f_mean": 0.26801346801346804,
+      "rougeL_f_mean": 0.5578865578865578,
+      "count": 3
+    },
+    "balanced": {
+      "rouge1_f_mean": 0.5329311211664153,
+      "rouge2_f_mean": 0.2828282828282828,
+      "rougeL_f_mean": 0.5329311211664153,
+      "count": 3
+    },
+    "creative": {
+      "rouge1_f_mean": 0.4761904761904762,
+      "rouge2_f_mean": 0.24603174603174605,
+      "rougeL_f_mean": 0.4761904761904762,
+      "count": 3
+    }
+  },
+  "per_level": {
+    "conservative": [
+      {
+        "original": "Machine learning improves with more data.",
+        "reference": "Machine learning gets better as data increases.",
+        "generated": "Machine learning improves with more data.",
+        "rouge1_f": 0.4615384615384615,
+        "rouge2_f": 0.1818181818181818,
+        "rougeL_f": 0.4615384615384615
+      },
+      {
+        "original": "The cat sat on the mat.",
+        "reference": "The cat rested on the rug.",
+        "generated": "The cat sat on the mat.",
+        "rouge1_f": 0.6666666666666666,
+        "rouge2_f": 0.4000000000000001,
+        "rougeL_f": 0.6666666666666666
+      },
+      {
+        "original": "Artificial Intelligence is changing the world.",
+        "reference": "AI is transforming the world.",
+        "generated": "Artificial Intelligence is changing the world.",
+        "rouge1_f": 0.5454545454545454,
+        "rouge2_f": 0.22222222222222224,
+        "rougeL_f": 0.5454545454545454
+      }
+    ],
+    "balanced": [
+      {
+        "original": "Machine learning improves with more data.",
+        "reference": "Machine learning gets better as data increases.",
+        "generated": "Machine learning improves with more data.",
+        "rouge1_f": 0.4615384615384615,
+        "rouge2_f": 0.1818181818181818,
+        "rougeL_f": 0.4615384615384615
+      },
+      {
+        "original": "The cat sat on the mat.",
+        "reference": "The cat rested on the rug.",
+        "generated": "The cat sat on the mat. The cat wiggled her tail.",
+        "rouge1_f": 0.4705882352941177,
+        "rouge2_f": 0.26666666666666666,
+        "rougeL_f": 0.4705882352941177
+      },
+      {
+        "original": "Artificial Intelligence is changing the world.",
+        "reference": "AI is transforming the world.",
+        "generated": "Artificial Intelligence (AI) is changing the world.",
+        "rouge1_f": 0.6666666666666666,
+        "rouge2_f": 0.4,
+        "rougeL_f": 0.6666666666666666
+      }
+    ],
+    "creative": [
+      {
+        "original": "Machine learning improves with more data.",
+        "reference": "Machine learning gets better as data increases.",
+        "generated": "Machine Learning is improving with more data.",
+        "rouge1_f": 0.42857142857142855,
+        "rouge2_f": 0.16666666666666666,
+        "rougeL_f": 0.42857142857142855
+      },
+      {
+        "original": "The cat sat on the mat.",
+        "reference": "The cat rested on the rug.",
+        "generated": "The cat was seated on the mat. I was shocked.",
+        "rouge1_f": 0.5,
+        "rouge2_f": 0.2857142857142857,
+        "rougeL_f": 0.5
+      },
+      {
+        "original": "Artificial Intelligence is changing the world.",
+        "reference": "AI is transforming the world.",
+        "generated": "Artificial intelligence (AI) is changing the world in a good way.",
+        "rouge1_f": 0.5000000000000001,
+        "rouge2_f": 0.28571428571428575,
+        "rougeL_f": 0.5000000000000001
+      }
+    ]
+  }
+}

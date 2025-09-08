@@ -1,16 +1,16 @@
-
-
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
-from auth import create_access_token, get_user_by_email
-from database import create_connection, update_user_password
-from models import PasswordResetRequest, UpdatePasswordRequest, UserCreate, UserLogin
-from passhash import hash_password, verify_password
-from fastapi import status
+from backend.api.database import create_connection, update_user_password
+from backend.api.models import UserCreate, UserLogin, PasswordResetRequest, UpdatePasswordRequest
+from backend.api.auth import create_access_token, get_user_by_email
+from backend.api.passhash import hash_password, verify_password
+from fastapi import HTTPException, status
+from fastapi.responses import JSONResponse
 
 
 router = APIRouter()
+
 
 @router.post("/register")
 def register(user: UserCreate):

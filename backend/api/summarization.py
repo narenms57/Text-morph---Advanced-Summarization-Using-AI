@@ -87,7 +87,7 @@ def summarize_long_text(text, chunk_token_limit=512, summary_params=None):
 
 if __name__ == "__main__":
     # Commented out to avoid error if running without this text
-    #input_text = """"""
+    input_text = "Replace this with the text you want to summarize."
     
     # For testing standalone, uncomment input_text assignment above or provide other text to test
 

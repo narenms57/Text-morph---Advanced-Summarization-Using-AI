@@ -80,17 +80,32 @@ def show_register():
         st.session_state.page = "login"
         st.rerun()
 
+def login_user(email, password):
+    url = f"{API_URL}/auth/login"
+    data = {"email": email, "password": password}
+    try:
+        response = httpx.post(url, json=data, timeout=10)
+        if response.status_code == 200:
+            user_data = response.json().get("user")
+            return True, user_data
+        else:
+            return False, None
+    except Exception as e:
+        st.error(f"Login failed: {str(e)}")
+        return False, None
+
+
 def show_login():
     st.title("Login")
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        success, user_data = login(email, password)
-        if login(email, password):
+        success, user_data = login_user(email, password)
+        if success:
             st.session_state.user_id = user_data['id']
+            st.session_state.email = user_data['email']
             st.success("Logged in successfully")
-
             st.session_state.page = "dashboard"
             st.session_state.logged_in = True
             st.rerun()

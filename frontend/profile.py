@@ -68,4 +68,4 @@ def profile_page():
     if st.button("Save Profile"):
         success = update_profile(age_group, language_preference)
         if success:
-            st.success("Profile updated successfully!")
+            st.success("Profile updated successfully!")  

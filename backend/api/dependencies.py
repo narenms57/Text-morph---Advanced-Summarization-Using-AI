@@ -1,11 +1,8 @@
+from backend.api.auth import get_user_by_email, verify_token
+from backend.api.authBearer import JWTBearer
 from fastapi import Depends, HTTPException
 
-from auth import get_user_by_email, verify_token
-from authBearer import JWTBearer
-
-
-
-def get_current_user(token :str = Depends(JWTBearer())):
+def get_current_user(token: str = Depends(JWTBearer())):
     email = verify_token(token)
     if email is None:
         raise HTTPException(status_code=403, detail="Invalid token or expired token.")
