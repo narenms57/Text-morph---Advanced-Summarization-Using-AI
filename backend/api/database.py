@@ -124,7 +124,7 @@ def save_generated_text(user_id: int, content_text: str, content_type: str):
 # For debugging when running the file directly
 if __name__ == "__main__":
     # You can create the user_texts table by uncommenting the below line:
-    # create_user_texts_table()
+    create_user_texts_table()
 
     users = fetch_all_users()
     print(users)  # Print fetched users or empty list if error occured

@@ -1,47 +1,73 @@
 import sys
 import os
-
-# Get the absolute path of the current file's directory
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# Get the parent directory (project root)
-parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
-# Add parent directory to Python path
-sys.path.append(parent_dir)
-#project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-#print("Project root path to add:", project_root)
-#sys.path.insert(0, project_root)
-
-#print("Updated sys.path:", sys.path)
-#print("Current working directory:", os.getcwd())
-#print("Backend folder exists at project root:", os.path.isdir(os.path.join(project_root, 'backend')))
-
-#the above three lines help find backend modules when running streamlit app
-
+from io import StringIO
 import streamlit as st
 import httpx
 import textstat
 import matplotlib.pyplot as plt
 from PIL import Image
 import pytesseract
-from io import StringIO
+from rouge_score import rouge_scorer
+
+# Fix path imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+sys.path.append(parent_dir)
+backend_dir = os.path.join(parent_dir, "backend")
+sys.path.append(backend_dir)
+
+# Backend imports
+from backend.api.paraphrasing import generate_paraphrase, paraphrase_long_text
 from backend.api.summarization import generate_summary, summarize_long_text
 from backend.api.database import save_generated_text
-
- 
-
-
-
-import os
-print("Current working directory:", os.getcwd())
-
-
-# Your existing imports and API_URL
-from forget_password import reset_password_simple
-from auth import login, logout
-from profile import get_profile, profile_page
+from forget_password import reset_password_with_otp
+from auth import login as backend_login, logout
+from profile import profile_page
 
 API_URL = "http://localhost:8000"
 
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #0A2239;
+        color: #E0F7FA;
+        font-family: 'Orbitron', sans-serif;
+    }
+    h1, h2, h3 {
+        color: #E0F7FA;
+        text-align: center;
+    }
+    .stTextInput > div > div > input,
+    .stTextArea textarea {
+        background-color: #05668D !important;
+        color: #E0F7FA !important;
+        border-radius: 6px;
+        padding: 6px !important;
+    }
+    .stButton>button {
+        background-color: #028090 !important;
+        color: #E0F7FA !important;
+        border-radius: 6px;
+        font-weight: bold;
+        padding: 10px 20px;
+    }
+    .stButton>button:hover {
+        background-color: #00A896 !important;
+        transform: scale(1.05);
+    }
+    [data-testid="stSidebar"] {
+        background-color: #05668D;
+    }
+    [data-testid="stSidebar"] * {
+        color: #E0F7FA !important;
+    }
+    .stTextArea textarea {
+        height: 200px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+#-------------- AUTH ------------
 def register_user(username, email, password, language_preference):
     url = f"{API_URL}/auth/register"
     data = {
@@ -54,14 +80,13 @@ def register_user(username, email, password, language_preference):
         response = httpx.post(url, json=data, timeout=10)
         if response.status_code == 201:
             st.success("Registration successful! Please login now.")
-        elif response.status_code == 409:
-            error_detail = response.json().get("detail", "User already exists.")
-            st.warning(f"{error_detail} Please login instead.")
+        elif response.status_code in [400, 409]:
+            st.warning(f"{response.json().get('detail', 'User already exists.')}")
         else:
-            error_detail = response.json().get("detail", "Registration failed.")
-            st.error(f"Error: {error_detail}")
+            st.error(f"Registration failed: {response.json().get('detail')}")
     except Exception as e:
         st.error(f"Unexpected error: {str(e)}")
+
 
 def show_register():
     st.title("Register")
@@ -80,19 +105,23 @@ def show_register():
         st.session_state.page = "login"
         st.rerun()
 
+
 def show_login():
-    st.title("Login")
+    st.title("SmartText Summarizer and Paraphraser")
+    st.header("Login")
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        success, user_data = login(email, password)
-        if login(email, password):
+        success, user_data, token = backend_login(email, password)
+        if success:
             st.session_state.user_id = user_data['id']
-            st.success("Logged in successfully")
-
-            st.session_state.page = "dashboard"
+            st.session_state.username = user_data['username']
+            st.session_state.email = user_data['email']
+            st.session_state.access_token = token
             st.session_state.logged_in = True
+            st.success(f"Logged in successfully as {user_data['username']}")
+            st.session_state.page = "dashboard"
             st.rerun()
         else:
             st.error("Invalid email or password")
@@ -105,15 +134,13 @@ def show_login():
         st.session_state.page = "register"
         st.rerun()
 
+
+# --------------------------- SIDEBAR ---------------------------
 def sidebar_menu():
     st.sidebar.title("Menu")
     if st.sidebar.button("Dashboard"):
         st.session_state.page = "dashboard"
         st.rerun()
-    #if st.sidebar.button("Home"):
-        # Redirecting home to dashboard since home is not used
-        #st.session_state.page = "dashboard"
-       # st.rerun()
     if st.sidebar.button("Profile"):
         st.session_state.page = "profile"
         st.rerun()
@@ -123,113 +150,149 @@ def sidebar_menu():
         st.session_state.logged_in = False
         st.rerun()
 
-def show_profile():
-    st.title("Profile Management")
-    profile = get_profile()
-    # Add your profile UI updates here
-user_id = st.session_state.get("user_id")
-st.write(f"User ID: {user_id}")
+
+# --------------------------- DASHBOARD ---------------------------
 def show_scores(flesch, fog, smog):
     col1, col2, col3 = st.columns(3)
-
     with col1:
-        st.markdown(
-            f"<div style='text-align:center; color:green; font-size:36px; font-weight:bold;'>{flesch:.1f}</div>"
-            f"<div style='text-align:center; font-size:18px;'>Flesch-Kincaid</div>", 
-            unsafe_allow_html=True
-        )
-        
+        st.metric("Flesch-Kincaid", f"{flesch:.1f}")
     with col2:
-        st.markdown(
-            f"<div style='text-align:center; color:goldenrod; font-size:36px; font-weight:bold;'>{fog:.1f}</div>"
-            f"<div style='text-align:center; font-size:18px;'>Gunning Fog</div>", 
-            unsafe_allow_html=True
-        )
-        
+        st.metric("Gunning Fog", f"{fog:.1f}")
     with col3:
-        st.markdown(
-            f"<div style='text-align:center; color:red; font-size:36px; font-weight:bold;'>{smog:.1f}</div>"
-            f"<div style='text-align:center; font-size:18px;'>SMOG Index</div>", 
-            unsafe_allow_html=True
-        )
+        st.metric("SMOG Index", f"{smog:.1f}")
+
+
+def compute_rouge_scores(reference_text, paraphrased_text):
+    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+    scores = scorer.score(reference_text, paraphrased_text)
+    return {k: v.fmeasure for k, v in scores.items()}
+
 
 def show_dashboard():
-    st.title("Dashboard - Readability Checker")
-    st.write("Upload a text file (.txt) to analyze readability.")
+    st.title("Dashboard - Smart Text Tools")
+    st.write("Upload a text file (.txt) or image to summarize, paraphrase, or check readability.")
 
-    uploaded_file = st.file_uploader("Choose a file", type=['txt','png','jpg','jpeg'])
+    uploaded_file = st.file_uploader("Choose a file", type=['txt', 'png', 'jpg', 'jpeg'])
+    if not uploaded_file:
+        return
 
-    if uploaded_file:
-        text = ""
-        if uploaded_file.type.startswith("text"):
-            stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
-            text = stringio.read()
-        else:
-            image = Image.open(uploaded_file)
-            text = pytesseract.image_to_string(image)
+    text = ""
+    if uploaded_file.type.startswith("text"):
+        stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+        text = stringio.read()
+    else:
+        image = Image.open(uploaded_file)
+        text = pytesseract.image_to_string(image)
 
-        # Optionally show extracted text
-        # st.subheader("Extracted Text")
-        # st.write(text)
+    st.markdown("### What would you like to do?")
+    tab1, tab2, tab3 = st.tabs(["📄 Summarize", "🔄 Paraphrase", "📊 Readability"])
 
-        #buttons for summarization and paraphrasing
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Summarize Text"):
+    # --- Summarize Tab
+    with tab1:
+        if st.button("Generate Summary"):
+            try:
+                summary = generate_summary(text) if len(text.split()) < 500 else summarize_long_text(text)
+                st.session_state.summary = summary  # ✅ store in session
+                st.text_area("Generated Summary", summary, height=200)
+
+                st.download_button("Download Summary", summary, file_name="summary.txt")
+
+                if "user_id" in st.session_state:
+                    save_generated_text(st.session_state.user_id, summary, "summary")
+
+            except Exception as e:
+                st.error(f"Error summarizing text: {str(e)}")
+
+        if st.session_state.get("summary") and st.button("Compare Summary with Input"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Input Text")
+                st.text_area("Original Text", text, height=200, disabled=True)
+            with col2:
                 st.subheader("Summary")
-                #summary = generate_summary(text)
-                summary = "Summary functionality is currently disabled."
-                st.write(summary)
-        with col2:
-            if st.button("Paraphrase Text"):
-                st.subheader("Paraphrased Text")
-                #paraphrased = paraphrase_text(text)
-                paraphrased = "Paraphrasing functionality is currently disabled."
-                st.write(paraphrased)
+                st.text_area("Summary", st.session_state.summary, height=200)
 
-        # Calculate readability scores
-        flesch = textstat.flesch_reading_ease(text)
-        fog = textstat.gunning_fog(text)
-        smog = textstat.smog_index(text)
+    # --- Paraphrase Tab
+    with tab2:
+        if st.button("Generate Paraphrase"):
+            try:
+                paraphrased = generate_paraphrase(text) if len(text.split()) <= 100 else paraphrase_long_text(text)
+                st.session_state.paraphrased = paraphrased  # ✅ store in session
+                st.text_area("Paraphrased Text", paraphrased, height=200)
 
-        st.subheader("Readability Scores")
-        show_scores(flesch, fog, smog)
+                st.download_button("Download Paraphrase", paraphrased, file_name="paraphrase.txt")
 
-        # Normalize scores for visualization:
-        # Flesch is 0-100 (higher is easier)
-        # Fog and Smog higher means harder, so invert and scale to 0-100
-        def norm_flesch(score): 
-            return max(0, min(score, 100))
-        def norm_fog_smog(score):
-            inv = 20 - score
-            norm = max(0, min(inv, 20)) * 5
-            return norm
+                if "user_id" in st.session_state:
+                    save_generated_text(st.session_state.user_id, paraphrased, "paraphrase")
 
-        beginner_score = (norm_flesch(flesch) + norm_fog_smog(fog) + norm_fog_smog(smog)) / 3
-        intermediate_score = 100 - abs(50 - beginner_score) * 2
-        advanced_score = 100 - beginner_score
+            except Exception as e:
+                st.error(f"Error while paraphrasing: {str(e)}")
 
-        # Clamp scores to 0-100 for display
-        beginner_score = max(0, min(beginner_score, 100))
-        intermediate_score = max(0, min(intermediate_score, 100))
-        advanced_score = max(0, min(advanced_score, 100))
+        if st.session_state.get("paraphrased") and st.button("Compare Paraphrase with Input"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Input Text")
+                st.text_area("Original Text", text, height=200, disabled=True)
+            with col2:
+                st.subheader("Paraphrased")
+                st.text_area("Paraphrased", st.session_state.paraphrased, height=200)
 
-        labels = ['Beginner', 'Intermediate', 'Advanced']
-        scores = [beginner_score, intermediate_score, advanced_score]
-        colors = ['green', 'orange', 'red']
+        # ROUGE score visualization
+        if st.session_state.get("paraphrased"):
+            scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+            rouge_scores = scorer.score(text, st.session_state.paraphrased)
+            rouge_values = [
+                rouge_scores['rouge1'].fmeasure,
+                rouge_scores['rouge2'].fmeasure,
+                rouge_scores['rougeL'].fmeasure
+            ]
 
-        fig, ax = plt.subplots()
-        bars = ax.bar(labels, scores, color=colors)
-        ax.set_ylim(0, 100)
-        ax.set_ylabel("Score (%)")
-        ax.set_title("Readability Level Distribution")
+            labels = ['ROUGE-1', 'ROUGE-2', 'ROUGE-L']
+            colors = ['blue', 'orange', 'green']
 
-        for bar, score in zip(bars, scores):
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2, height + 2, f'{score:.1f}%', ha='center')
+            fig, ax = plt.subplots()
+            ax.bar(labels, rouge_values, color=colors)
+            ax.set_ylim(0, 1)
+            ax.set_ylabel("ROUGE Score")
+            ax.set_title("ROUGE Visual Representation")
+            st.pyplot(fig)
 
-        st.pyplot(fig)
+    # --- Readability Tab
+    with tab3:
+        if st.button("Analyze Readability"):
+            flesch = textstat.flesch_reading_ease(text)
+            fog = textstat.gunning_fog(text)
+            smog = textstat.smog_index(text)
+            st.subheader("Readability Scores")
+            show_scores(flesch, fog, smog)
 
+            def norm_flesch(score): return max(0, min(score, 100))
+            def norm_fog_smog(score): return max(0, min((20 - score) * 5, 100))
+
+            beginner_score = (norm_flesch(flesch) + norm_fog_smog(fog) + norm_fog_smog(smog)) / 3
+            intermediate_score = 100 - abs(50 - beginner_score) * 2
+            advanced_score = 100 - beginner_score
+
+            beginner_score = max(0, min(beginner_score, 100))
+            intermediate_score = max(0, min(intermediate_score, 100))
+            advanced_score = max(0, min(advanced_score, 100))
+
+            labels = ['Beginner', 'Intermediate', 'Advanced']
+            scores = [beginner_score, intermediate_score, advanced_score]
+            colors = ['green', 'orange', 'red']
+
+            fig, ax = plt.subplots()
+            bars = ax.bar(labels, scores, color=colors)
+            ax.set_ylim(0, 100)
+            ax.set_ylabel("Score (%)")
+            ax.set_title("Readability Level Distribution")
+            for bar, score in zip(bars, scores):
+                ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 2,
+                        f'{score:.1f}%', ha='center')
+            st.pyplot(fig)
+
+
+# --------------------------- MAIN ---------------------------
 def main():
     if "page" not in st.session_state:
         st.session_state.page = "login"
@@ -240,16 +303,18 @@ def main():
         if st.session_state.page == "login":
             show_login()
         elif st.session_state.page == "reset_password":
-            reset_password_simple()
+            reset_password_with_otp()
         else:
             show_register()
     else:
         sidebar_menu()
-        st.write(f"Logged in as {st.session_state.get('email', 'Unknown')}")
-        if st.session_state.page == "dashboard" or st.session_state.page == "home":  
+        st.write(f"Logged in as {st.session_state.get('username', 'Unknown')}")
+        if st.session_state.page in ["dashboard", "home"]:
             show_dashboard()
         elif st.session_state.page == "profile":
             profile_page()
 
+
+# --------------------------- ENTRY POINT ---------------------------
 if __name__ == "__main__":
     main()

@@ -3,67 +3,74 @@ import httpx
 
 API_URL = "http://localhost:8000"
 
+def reset_password_with_otp():
+    st.title("Reset Password (with OTP)")
 
-def reset_password_simple():
-    st.title("Reset Password")
-
-    # Show success message and "Go to Login" button if password just reset
-    if st.session_state.get("password_reset_success"):
-        st.success("Password reset successfully! Please login with your new password.")
-        if st.button("Go to Login"):
-            st.session_state.page = "login"
-            st.session_state.password_reset_success = False
-            st.rerun()
-        return  # Stop here, don't show other UI
-
-    # Initialize session state variables
-    if "email_verified" not in st.session_state:
-        st.session_state.email_verified = False
+    # Initialize session state
+    if "step" not in st.session_state:
+        st.session_state.step = "email"
         st.session_state.email = ""
+        st.session_state.otp = ""
 
-    # Step 1: Verify email exists
-    if not st.session_state.email_verified:
-        email = st.text_input("Enter your registered email to reset password")
-        if st.button("Verify Email"):
+    # Step 1: Enter email and send OTP
+    if st.session_state.step == "email":
+        email = st.text_input("Enter your registered email")
+        if st.button("Send OTP"):
             if not email:
                 st.error("Please enter an email address.")
             else:
                 try:
-                    response = httpx.post(f"{API_URL}/auth/reset-password", json={"email": email}, timeout=10)
-                    if response.status_code == 200:
-                        st.session_state.email_verified = True
+                    res = httpx.post(f"{API_URL}/auth/request-password-reset", json={"email": email}, timeout=10)
+                    if res.status_code == 200:
                         st.session_state.email = email
-                        st.success("Email verified. You may now set a new password.")
+                        st.session_state.step = "otp"
+                        st.success("OTP sent to your email.")
                         st.rerun()
                     else:
-                        st.error(response.json().get("detail", "Email not found."))
+                        st.error(res.json().get("detail", "Failed to send OTP."))
                 except Exception as e:
                     st.error(f"Network error: {str(e)}")
 
-    # Step 2: Enter new password and confirm
-    if st.session_state.email_verified:
+    # Step 2: Enter OTP
+    elif st.session_state.step == "otp":
+        otp = st.text_input("Enter the OTP sent to your email")
+        if st.button("Verify OTP"):
+            if not otp:
+                st.error("Please enter the OTP.")
+            else:
+                st.session_state.otp = otp
+                st.session_state.step = "new_password"
+                st.success("OTP verified. Now set your new password.")
+                st.rerun()
+
+    # Step 3: Reset password
+    elif st.session_state.step == "new_password":
         new_password = st.text_input("New Password", type="password")
         confirm_password = st.text_input("Confirm New Password", type="password")
 
         if st.button("Reset Password"):
             if not new_password or not confirm_password:
-                st.error("Please enter and confirm your new password.")
+                st.error("Please fill in both password fields.")
             elif new_password != confirm_password:
                 st.error("Passwords do not match.")
             else:
                 try:
-                    payload = {"email": st.session_state.email, "new_password": new_password}
-                    response = httpx.post(f"{API_URL}/auth/update-password", json=payload, timeout=10)
-                    if response.status_code == 200:
-                        st.session_state.password_reset_success = True
-                        st.session_state.email_verified = False
+                    payload = {
+                        "email": st.session_state.email,
+                        "otp": st.session_state.otp,
+                        "new_password": new_password
+                    }
+                    res = httpx.post(f"{API_URL}/auth/verify-otp-and-reset", json=payload, timeout=10)
+                    if res.status_code == 200:
+                        st.success("Password reset successfully! Please login with your new password.")
+                        # reset session state
+                        st.session_state.step = "email"
                         st.session_state.email = ""
-                        st.rerun()
+                        st.session_state.otp = ""
                     else:
-                        st.error(response.json().get("detail", "Failed to reset password."))
+                        st.error(res.json().get("detail", "Failed to reset password."))
                 except Exception as e:
                     st.error(f"Network error: {str(e)}")
 
-
 if __name__ == "__main__":
-    reset_password_simple()
+    reset_password_with_otp()
