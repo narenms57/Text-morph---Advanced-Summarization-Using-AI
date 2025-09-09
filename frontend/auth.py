@@ -20,7 +20,7 @@ def login(email: str, password: str):
             st.session_state["logged_in"] = True
             st.session_state["email"] = user.get("email")
             st.session_state["user_id"]= user.get("id")  # Store user ID in session state
-            return True
+            return True,user
         else:
             return False
     except httpx.HTTPError as e:

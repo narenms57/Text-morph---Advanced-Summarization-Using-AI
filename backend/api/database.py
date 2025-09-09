@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()  # Loads .env file variables into environment
-
+print(f"DB_USER={os.getenv('DB_USER')}")
+print(f"DB_PASSWORD={'***' if os.getenv('DB_PASSWORD') else 'NOT SET'}")
 
 def create_connection():
     try:
@@ -13,7 +14,9 @@ def create_connection():
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME")
+            database=os.getenv("DB_NAME"),
+            port=3306,
+            use_pure=True
         )
         if connection.is_connected():
             return connection  # Return open connection for query functions

@@ -101,10 +101,10 @@ def show_login():
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        success, user_data = login_user(email, password)
+        success, user_data = login(email, password)
         if success:
-            st.session_state.user_id = user_data['id']
-            st.session_state.email = user_data['email']
+            #st.session_state.user_id = user_data['id']
+            #st.session_state.email = user_data['email']
             st.success("Logged in successfully")
             st.session_state.page = "dashboard"
             st.session_state.logged_in = True

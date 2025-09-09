@@ -10,6 +10,8 @@ def get_profile():
     Fetches the current user profile from backend /profile (GET).
     Uses JWT access token stored in session_state.
     """
+    token = st.session_state.get('access_token')
+    st.write(f"Using token: {token}")
     headers = {"Authorization": f"Bearer {st.session_state.get('access_token')}"}
     try:
         response = httpx.get(f"{API_URL}/profile/read", headers=headers, timeout=10)
