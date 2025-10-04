@@ -76,3 +76,9 @@ logs/
 # Environment variables and secrets
 .env
 *.env
+
+# Dataset folder (to ignore large dataset files)
+dataset/
+
+# Model checkpoints (to ignore large model files)
+backend/models/

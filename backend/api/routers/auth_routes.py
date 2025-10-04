@@ -30,8 +30,8 @@ def register(user: UserCreate):
     hashed_password = hash_password(user.password)
     #insert inot users
     cursor.execute(
-        "INSERT INTO users (username, email, hashed_password, language_preference) VALUES (%s, %s, %s, %s)",
-        (user.username, user.email, hashed_password, user.language_preference)
+        "INSERT INTO users (username, email, hashed_password, language_preference,role) VALUES (%s, %s, %s, %s, %s)",
+        (user.username, user.email, hashed_password, user.language_preference,'user')
     )
     connection.commit()
 
@@ -74,6 +74,7 @@ def login(user:UserLogin):
                     "id": db_user["id"],
                     "username": db_user["username"],
                     "email": db_user["email"],
+                    "role": db_user["role"]
                 }}
 
 @router.post("/reset-password")

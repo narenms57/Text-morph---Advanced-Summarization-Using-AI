@@ -55,7 +55,7 @@ def verify_token(token: str):
 def get_user_by_email(email: str):
     connection = create_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT id, email FROM users WHERE email = %s", (email,))
+    cursor.execute("SELECT id, email ,role FROM users WHERE email = %s", (email,))
     user = cursor.fetchone()
     cursor.close()
     connection.close()

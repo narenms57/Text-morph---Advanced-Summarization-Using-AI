@@ -22,14 +22,17 @@ def login(email: str, password: str):
             st.session_state["user_id"]= user.get("id")  # Store user ID in session state
             return True,user
         else:
-            return False
+            return False,None
     except httpx.HTTPError as e:
+        error_detail = "Unknown error"
+        if e.response is not None:
+            try:
 
-        st.error(f"Login failed: {e.response.json().get('detail')}")
-        return False
-    except Exception:
-        st.error("Unexpected error during login")
-        return False
+                error_detail = e.response.json().get('detail', error_detail)
+            except Exception:
+                error_detail = e.response.text or error_detail
+        st.error(f"Login failed: {error_detail}")
+        return False,None
 
 def logout():
     """

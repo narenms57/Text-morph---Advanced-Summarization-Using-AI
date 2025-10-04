@@ -5,7 +5,8 @@ class UserCreate(BaseModel):
     username:str
     email: EmailStr
     password: str
-    language_preference: str = "English"
+    language_preference: str = "English" 
+    role: str = "user"  # Default role is 'user'
 
 
 class UserLogin(BaseModel):
