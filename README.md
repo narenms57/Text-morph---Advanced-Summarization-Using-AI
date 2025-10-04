@@ -1,3 +1,4 @@
+
 🧠 TextMorph
 Project Overview
 TextMorph is an advanced text processing application designed for summarization and paraphrasing, built as part of a milestone-driven development internship project. ✅ The project has successfully completed all planned milestones, encompassing:
@@ -37,3 +38,5 @@ pip install -r requirements.txt
 ✅ Ensure that the downloaded model checkpoints and dataset are in the paths specified above.
 
 🚀 Run the application.
+
+
